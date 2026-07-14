@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut, User } from "firebase/auth";
-import { getDatabase, ref, set, push, get, query, orderByChild, equalTo, onValue } from "firebase/database";
+import { getDatabase, ref, update, set, push, get, query, orderByChild, equalTo, onValue } from "firebase/database";
 
 export interface DocData {
   docId: string;
@@ -8,6 +8,7 @@ export interface DocData {
   title: string;
   content: string;
   createdAt: number;
+  collaborators?: { [userId: string]: boolean };
 }
 
 const firebaseConfig = {
@@ -94,3 +95,49 @@ export async function saveDocumentContent(docId: string, content: string) {
   const contentRef = ref(db, `docs/${docId}/content`);
   await set(contentRef, content);
 }
+
+// collaborators
+
+// 1.public link sharing
+export async function enableLinkSharing(docId: string) {
+  const updates: { [key: string]: boolean } = {};
+  updates[`/docs/${docId}/isPublicShared`] = true;
+  return update(ref(db), updates);
+}
+
+// 2. add user as collaborator
+export async function joinAsCollaborator(docId: string, userId: string) {
+  const docRef = ref(db, `docs/${docId}`);
+  const snapshot = await get(docRef);
+  
+  if (!snapshot.exists()) throw new Error("Document not found");
+  const docData = snapshot.val();
+
+  // if alread owner or collaborator, do nothing
+  if (docData.ownerId === userId || (docData.collaborators && docData.collaborators[userId])) {
+    return;
+  }
+
+  const updates: { [key: string]: boolean } = {};
+  updates[`/docs/${docId}/collaborators/${userId}`] = true;
+  updates[`/sharedDocs/${userId}/${docId}`] = true;
+
+  return update(ref(db), updates);
+}
+
+// 3. Live listen to collaboration list for UI display
+export function subscribeCollaborators(docId: string, callback: (collaborators: string[]) => void) {
+  const collaboratorsRef = ref(db, `docs/${docId}/collaborators`);
+  return onValue(collaboratorsRef, (snapshot) => {
+    const list = snapshot.exists() ? Object.keys(snapshot.val()) : [];
+    callback(list);
+  });
+}
+
+// 4. get user details by id
+export async function getUserById(userId: string): Promise<{ uid: string; name: string | null; email: string | null } | null> {
+  const userRef = ref(db, `users/${userId}`);
+  const snapshot = await get(userRef);
+  return snapshot.exists() ? snapshot.val() : null;
+}
+

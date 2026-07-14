@@ -35,7 +35,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} ${roboto.variable}`}>
-      <body>
+      <body style={{ backgroundColor: "#00000015" }}>
         <AppRouterCacheProvider>
           <ThemeProvider theme={theme}>
             {children}

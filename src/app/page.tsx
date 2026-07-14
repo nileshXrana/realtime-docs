@@ -10,11 +10,13 @@ import CircularProgress from "@mui/material/CircularProgress";
 import Image from "next/image";
 import { subscribeAuth, loginWithGoogle, saveUser } from "../services/firebase";
 import styles from "./page.module.css";
+import { useParams } from 'next/navigation'
 
 export default function Home() {
   const router = useRouter();
   const [authLoading, setAuthLoading] = useState(true);
   const [loading, setLoading] = useState(false);
+  const params = useParams<{ redirect: string }>()
 
   useEffect(() => {
     const unsubscribe = subscribeAuth((currentUser) => {
@@ -33,7 +35,10 @@ export default function Home() {
       const user = await loginWithGoogle();
       if (user) {
         await saveUser(user.uid, user.displayName, user.email);
-        router.push("/dashboard");
+
+        const redirectTo = params?.redirect ? `/${params.redirect}` : "/dashboard";
+        console.log("Redirecting to:", redirectTo);
+        router.push(redirectTo);
       }
     } catch (error) {
       console.error(error);
@@ -74,8 +79,8 @@ export default function Home() {
               <Image
                 src="/google.svg"
                 alt="Google Logo"
-                width={18}
-                height={18}
+                width={20}
+                height={20}
               />
               Sign in with Google
             </Button>
