@@ -1,0 +1,104 @@
+.container {
+  min-height: 100vh;
+  background-color: #fafafa;
+  padding-top: 24px;
+  padding-bottom: 24px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.backButton {
+  color: #5f6368;
+  font-weight: 500;
+  text-transform: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+}
+
+.title {
+  font-weight: 700;
+  color: #202124;
+}
+
+.editorWrapper {
+  background-color: #ffffff;
+  border: 1px solid #dadce0;
+  border-radius: 8px;
+  min-height: 500px;
+  padding: 24px;
+  box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+}
+
+.toolbar {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid #dadce0;
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+}
+
+.toolbarButton {
+  text-transform: none;
+  font-weight: bold;
+  border-radius: 4px;
+}
+
+.activeButton {
+  background-color: #e8f0fe !important;
+  color: #1a73e8 !important;
+}
+
+.editorArea {
+  flex-grow: 1;
+  outline: none;
+}
+
+.editorArea :global(.ProseMirror) {
+  outline: none;
+  min-height: 400px;
+}
+
+.titleInput {
+  max-width: 300px;
+}
+
+.titleInput :global(.MuiInputBase-root) {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #202124;
+}
+
+.titleInput :global(.MuiOutlinedInput-notchedOutline) {
+  border: none;
+}
+
+.titleInput :global(.MuiInputBase-input) {
+  padding: 6px 12px;
+  border-radius: 4px;
+  background-color: transparent;
+  transition: background-color 0.2s;
+}
+
+.titleInput :global(.MuiInputBase-input:hover) {
+  background-color: #f1f3f4;
+}
+
+.titleInput :global(.MuiInputBase-input:focus) {
+  background-color: #ffffff;
+  box-shadow: inset 0 0 0 2px #1a73e8;
+}
+
+.loadingContainer {
+  display: flex;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  background-color: #fafafa;
+}
