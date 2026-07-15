@@ -13,10 +13,10 @@ import CardContent from "@mui/material/CardContent";
 import CardActionArea from "@mui/material/CardActionArea";
 import Skeleton from "@mui/material/Skeleton";
 import AddIcon from '@mui/icons-material/Add';
-import LogoutIcon from '@mui/icons-material/Logout';
 import DescriptionIcon from '@mui/icons-material/Description';
 import { subscribeAuth, subscribeUserDocs, createDocument, logout } from "../../services/firebase";
 import styles from "./dashboard.module.css";
+import AccountMenu from "@/components/account-menu/account-menu";
 
 interface Doc {
   docId: string;
@@ -103,14 +103,10 @@ export default function Dashboard() {
           >
             {creating ? "Creating..." : "Create Doc"}
           </Button>
-          <Button
-            variant="text"
-            startIcon={<LogoutIcon />}
-            onClick={handleLogout}
-            className={styles.logoutButton}
-          >
-            Sign Out
-          </Button>
+          {/* google profile */}
+          {user && (
+            <AccountMenu user={user} handleLogout={handleLogout} />
+          )}
         </Box>
       </Box>
 

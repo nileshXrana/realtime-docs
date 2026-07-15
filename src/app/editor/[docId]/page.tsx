@@ -30,6 +30,8 @@ import IconButton from "@mui/material/IconButton";
 import CloseIcon from "@mui/icons-material/Close";
 import QRCodeGenerator from "@/components/qrcode/qrcode";
 import Snackbar from "@mui/material/Snackbar";
+import AccountMenu from "@/components/account-menu/account-menu";
+import { logout } from "@/services/firebase";
 
 const StyledMenu = styled((props: MenuProps) => (
   <Menu
@@ -264,8 +266,17 @@ export default function EditorPage({ params }: { params: Promise<{ docId: string
     );
   }
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+      router.push("/");
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   return (
-    <Container className={styles.container} maxWidth="md">
+    <Box>
       <Box className={styles.header}>
         <Box sx={{ display: 'flex', justifyContent: 'flex-start' }}>
           <Button
@@ -339,10 +350,13 @@ export default function EditorPage({ params }: { params: Promise<{ docId: string
               </MenuItem>
             ))}
           </StyledMenu>
+          {user && (
+            <AccountMenu user={user} handleLogout={handleLogout} />
+          )}
         </Box>
       </Box>
 
-      <Box className={styles.editorWrapper}>
+      <Box className={styles.editorWrapper} sx={{ width: { xs: '90%', sm: '80%', md: '70%', lg: '60%', xl: '50%' } }}>
         <SimpleEditorUI editor={editor} />
       </Box>
 
@@ -382,6 +396,7 @@ export default function EditorPage({ params }: { params: Promise<{ docId: string
         onClose={() => setCopied(false)}
         message="Invite link copied to clipboard!"
       />
-    </Container>
+
+    </Box>
   );
 }

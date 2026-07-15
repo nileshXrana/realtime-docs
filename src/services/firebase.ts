@@ -40,9 +40,9 @@ export function subscribeAuth(callback: (user: User | null) => void) {
   return onAuthStateChanged(auth, callback);
 }
 
-export async function saveUser(uid: string, name: string | null, email: string | null) {
+export async function saveUser(uid: string, name: string | null, email: string | null, photoURL: string | null) {
   const userRef = ref(db, `users/${uid}`);
-  await set(userRef, { uid, name, email });
+  await set(userRef, { uid, name, email, photoURL });
 }
 
 export async function createDocument(ownerId: string, title: string = "Untitled Document") {

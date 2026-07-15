@@ -34,8 +34,7 @@ export default function Home() {
     try {
       const user = await loginWithGoogle();
       if (user) {
-        await saveUser(user.uid, user.displayName, user.email);
-
+        await saveUser(user.uid, user.displayName, user.email, user.photoURL);
         const redirectTo = params?.redirect ? `/${params.redirect}` : "/dashboard";
         console.log("Redirecting to:", redirectTo);
         router.push(redirectTo);
