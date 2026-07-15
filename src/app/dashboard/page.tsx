@@ -11,6 +11,10 @@ import CircularProgress from "@mui/material/CircularProgress";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import CardActionArea from "@mui/material/CardActionArea";
+import Skeleton from "@mui/material/Skeleton";
+import AddIcon from '@mui/icons-material/Add';
+import LogoutIcon from '@mui/icons-material/Logout';
+import DescriptionIcon from '@mui/icons-material/Description';
 import { subscribeAuth, subscribeUserDocs, createDocument, logout } from "../../services/firebase";
 import styles from "./dashboard.module.css";
 
@@ -82,12 +86,16 @@ export default function Dashboard() {
   return (
     <Container className={styles.container}>
       <Box className={styles.header}>
-        <Typography variant="h5" className={styles.title}>
-          Realtime Docs
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <DescriptionIcon sx={{ color: '#1a73e8', fontSize: 32 }} />
+          <Typography variant="h5" className={styles.title}>
+            Realtime Docs
+          </Typography>
+        </Box>
         <Box className={styles.headerActions}>
           <Button
             variant="contained"
+            startIcon={<AddIcon />}
             onClick={handleCreateDoc}
             disabled={creating}
             className={styles.createButton}
@@ -97,6 +105,7 @@ export default function Dashboard() {
           </Button>
           <Button
             variant="text"
+            startIcon={<LogoutIcon />}
             onClick={handleLogout}
             className={styles.logoutButton}
           >
@@ -107,22 +116,45 @@ export default function Dashboard() {
 
       {docs.length === 0 ? (
         <Box className={styles.emptyState}>
-          <Typography variant="body1" color="textSecondary">
-            No documents yet. Create one to get started!
+          <DescriptionIcon sx={{ fontSize: 80, color: '#dadce0', marginBottom: 2 }} />
+          <Typography variant="h6" sx={{ fontWeight: 600, color: '#3c4043', marginBottom: 1 }}>
+            No documents yet
           </Typography>
+          <Typography variant="body2" color="textSecondary" sx={{ marginBottom: 3 }}>
+            Create a new document to start collaborating in real-time.
+          </Typography>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleCreateDoc}
+            disabled={creating}
+            className={styles.createButton}
+            disableElevation
+          >
+            {creating ? "Creating..." : "Create Doc"}
+          </Button>
         </Box>
       ) : (
         <Box className={styles.docGrid}>
           {docs.map((doc) => (
             <Card key={doc.docId} className={styles.docCard} variant="outlined">
               <CardActionArea onClick={() => router.push(`/editor/${doc.docId}`)}>
-                <CardContent>
+                <Box className={styles.docThumbnail}>
+                  <Skeleton variant="text" width="40%" height={20} animation={false} sx={{ bgcolor: 'rgba(0,0,0,0.06)' }} />
+                  <Skeleton variant="rectangular" width="75%" height={8} animation={false} sx={{ bgcolor: 'rgba(0,0,0,0.04)', borderRadius: '4px' }} />
+                  <Skeleton variant="rectangular" width="85%" height={8} animation={false} sx={{ bgcolor: 'rgba(0,0,0,0.04)', borderRadius: '4px' }} />
+                  <Skeleton variant="rectangular" width="60%" height={8} animation={false} sx={{ bgcolor: 'rgba(0,0,0,0.04)', borderRadius: '4px' }} />
+                </Box>
+                <CardContent className={styles.docContent}>
                   <Typography variant="subtitle1" noWrap className={styles.docTitle}>
                     {doc.title}
                   </Typography>
-                  <Typography variant="body2" className={styles.docDate}>
-                    {new Date(doc.createdAt).toLocaleDateString()}
-                  </Typography>
+                  <Box className={styles.docFooter}>
+                    <DescriptionIcon sx={{ color: '#1a73e8', fontSize: 16 }} />
+                    <Typography variant="body2" className={styles.docDate}>
+                      {new Date(doc.createdAt).toLocaleDateString()}
+                    </Typography>
+                  </Box>
                 </CardContent>
               </CardActionArea>
             </Card>

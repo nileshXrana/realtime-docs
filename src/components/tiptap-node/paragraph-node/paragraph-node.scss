@@ -29,9 +29,8 @@
   outline: none;
   caret-color: var(--tt-cursor-color);
 
-  // Paragraph spacing
   p:not(:first-child):not(td p):not(th p) {
-    margin-top: 20px;
+    margin-top: 6px;
   }
 
   p:not(td p):not(th p) {

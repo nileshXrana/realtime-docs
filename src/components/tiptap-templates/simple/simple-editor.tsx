@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { EditorContent, EditorContext, useEditor } from "@tiptap/react"
 import { use } from "react";
 import { useRouter } from "next/navigation";
+import { useDebouncedCallback } from "use-debounce";
 import { User } from "firebase/auth";
 import Container from "@mui/material/Container";
 import Box from "@mui/material/Box";
@@ -83,8 +84,7 @@ import { useIsBreakpoint } from "@/hooks/use-is-breakpoint"
 import { useWindowSize } from "@/hooks/use-window-size"
 import { useCursorVisibility } from "@/hooks/use-cursor-visibility"
 
-// --- Components ---
-import { ThemeToggle } from "@/components/tiptap-templates/simple/theme-toggle"
+
 
 // --- Lib ---
 import { handleImageUpload, MAX_FILE_SIZE } from "@/lib/tiptap-utils"
@@ -142,28 +142,7 @@ const StyledMenu = styled((props: MenuProps) => (
   },
 }));
 
-function useDebounce<Args extends unknown[], R>(fn: (...args: Args) => R, delay: number) {
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const debouncedFn = (...args: Args) => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-    timeoutRef.current = setTimeout(() => {
-      fn(...args);
-    }, delay);
-  };
-
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
-  }, []);
-
-  return debouncedFn;
-}
 
 const MainToolbarContent = ({
   onHighlighterClick,
@@ -234,12 +213,6 @@ const MainToolbarContent = ({
       </ToolbarGroup>
 
       <Spacer />
-
-      {isMobile && <ToolbarSeparator />}
-
-      <ToolbarGroup>
-        <ThemeToggle />
-      </ToolbarGroup>
     </>
   )
 }
@@ -273,9 +246,103 @@ const MobileToolbarContent = ({
   </>
 )
 
+export const simpleEditorProps = {
+  attributes: {
+    autocomplete: "off",
+    autocorrect: "off",
+    autocapitalize: "off",
+    "aria-label": "Main content area, start typing to enter text.",
+    class: "simple-editor",
+  },
+};
+
+export const simpleEditorExtensions = [
+  StarterKit.configure({
+    horizontalRule: false,
+    link: {
+      openOnClick: false,
+      enableClickSelection: true,
+    },
+  }),
+  HorizontalRule,
+  TextAlign.configure({ types: ["heading", "paragraph"] }),
+  TaskList,
+  TaskItem.configure({ nested: true }),
+  Highlight.configure({ multicolor: true }),
+  Image,
+  Typography,
+  Superscript,
+  Subscript,
+  Selection,
+  ImageUploadNode.configure({
+    accept: "image/*",
+    maxSize: MAX_FILE_SIZE,
+    limit: 3,
+    upload: handleImageUpload,
+    onError: (error) => console.error("Upload failed:", error),
+  }),
+];
+
+export function SimpleEditorUI({ editor }: { editor: any }) {
+  const isMobile = useIsBreakpoint()
+  const { height } = useWindowSize()
+  const [mobileView, setMobileView] = useState<"main" | "highlighter" | "link">(
+    "main"
+  )
+  const toolbarRef = useRef<HTMLDivElement>(null)
+
+  const rect = useCursorVisibility({
+    editor,
+    overlayHeight: toolbarRef.current?.getBoundingClientRect().height ?? 0,
+  })
+
+  useEffect(() => {
+    if (!isMobile && mobileView !== "main") {
+      setMobileView("main")
+    }
+  }, [isMobile, mobileView])
+
+  if (!editor) return null
+
+  return (
+    <div className={styles.editorArea}>
+      <EditorContext.Provider value={{ editor }}>
+        <Toolbar
+          ref={toolbarRef}
+          style={{
+            ...(isMobile
+              ? {
+                  bottom: `calc(100% - ${height - rect.y}px)`,
+                }
+              : {}),
+          }}
+        >
+          {mobileView === "main" ? (
+            <MainToolbarContent
+              onHighlighterClick={() => setMobileView("highlighter")}
+              onLinkClick={() => setMobileView("link")}
+              isMobile={isMobile}
+            />
+          ) : (
+            <MobileToolbarContent
+              type={mobileView === "highlighter" ? "highlighter" : "link"}
+              onBack={() => setMobileView("main")}
+            />
+          )}
+        </Toolbar>
+
+        <EditorContent
+          editor={editor}
+          role="presentation"
+          className="simple-editor-content"
+        />
+      </EditorContext.Provider>
+    </div>
+  )
+}
+
 export function SimpleEditor({ params }: { params: Promise<{ docId: string }> }) {
   const isUpdatingRef = useRef(false);
-
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
@@ -296,63 +363,12 @@ export function SimpleEditor({ params }: { params: Promise<{ docId: string }> })
   const isLoadedRef = useRef(false);
   const [collaborators, setCollaborators] = useState<string[]>([]);
 
-  const isMobile = useIsBreakpoint()
-  const { height } = useWindowSize()
-  const [mobileView, setMobileView] = useState<"main" | "highlighter" | "link">(
-    "main"
-  )
-  const toolbarRef = useRef<HTMLDivElement>(null)
-
   const editor = useEditor({
     immediatelyRender: false,
-    editorProps: {
-      attributes: {
-        autocomplete: "off",
-        autocorrect: "off",
-        autocapitalize: "off",
-        "aria-label": "Main content area, start typing to enter text.",
-        class: "simple-editor",
-      },
-    },
-    extensions: [
-      StarterKit.configure({
-        horizontalRule: false,
-        link: {
-          openOnClick: false,
-          enableClickSelection: true,
-        },
-      }),
-      HorizontalRule,
-      TextAlign.configure({ types: ["heading", "paragraph"] }),
-      TaskList,
-      TaskItem.configure({ nested: true }),
-      Highlight.configure({ multicolor: true }),
-      Image,
-      Typography,
-      Superscript,
-      Subscript,
-      Selection,
-      ImageUploadNode.configure({
-        accept: "image/*",
-        maxSize: MAX_FILE_SIZE,
-        limit: 3,
-        upload: handleImageUpload,
-        onError: (error) => console.error("Upload failed:", error),
-      }),
-    ],
+    editorProps: simpleEditorProps,
+    extensions: simpleEditorExtensions,
     content,
   })
-
-  const rect = useCursorVisibility({
-    editor,
-    overlayHeight: toolbarRef.current?.getBoundingClientRect().height ?? 0,
-  })
-
-  useEffect(() => {
-    if (!isMobile && mobileView !== "main") {
-      setMobileView("main")
-    }
-  }, [isMobile, mobileView])
 
   useEffect(() => {
     const unsubscribe = subscribeAuth(async (currentUser) => {
@@ -376,7 +392,6 @@ export function SimpleEditor({ params }: { params: Promise<{ docId: string }> })
     return () => unsubscribe();
   }, [router]);
 
-  // rerender the editor when any user edits the document, so that the content is always up-to-date
   useEffect(() => {
     if (!editor || !user) return;
 
@@ -406,7 +421,7 @@ export function SimpleEditor({ params }: { params: Promise<{ docId: string }> })
     loadContent();
   }, [docId, editor, user]);
 
-  const debouncedSaveTitle = useDebounce(async (newTitle: string) => {
+  const debouncedSaveTitle = useDebouncedCallback(async (newTitle: string) => {
     try {
       await saveDocumentTitle(docId, newTitle);
     } catch (error) {
@@ -420,7 +435,7 @@ export function SimpleEditor({ params }: { params: Promise<{ docId: string }> })
     debouncedSaveTitle(newTitle);
   };
 
-  const debouncedSave = useDebounce(async (html: string) => {
+  const debouncedSave = useDebouncedCallback(async (html: string) => {
     try {
       await saveDocumentContent(docId, html);
     } catch (error) {
@@ -478,39 +493,5 @@ export function SimpleEditor({ params }: { params: Promise<{ docId: string }> })
     );
   }
 
-  return (
-    <div className={styles.editorArea}>
-      <EditorContext.Provider value={{ editor }}>
-        <Toolbar
-          ref={toolbarRef}
-          style={{
-            ...(isMobile
-              ? {
-                bottom: `calc(100% - ${height - rect.y}px)`,
-              }
-              : {}),
-          }}
-        >
-          {mobileView === "main" ? (
-            <MainToolbarContent
-              onHighlighterClick={() => setMobileView("highlighter")}
-              onLinkClick={() => setMobileView("link")}
-              isMobile={isMobile}
-            />
-          ) : (
-            <MobileToolbarContent
-              type={mobileView === "highlighter" ? "highlighter" : "link"}
-              onBack={() => setMobileView("main")}
-            />
-          )}
-        </Toolbar>
-
-        <EditorContent
-          editor={editor}
-          role="presentation"
-          className="simple-editor-content"
-        />
-      </EditorContext.Provider>
-    </div>
-  )
+  return <SimpleEditorUI editor={editor} />;
 }

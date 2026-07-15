@@ -8,17 +8,28 @@ import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
 import TextField from "@mui/material/TextField";
-import { useEditor, EditorContent } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
+import { useEditor } from "@tiptap/react";
 import { getDatabase, ref, onValue, set } from "firebase/database";
-import { subscribeAuth, joinAsCollaborator, getDocument, saveDocumentTitle, saveDocumentContent, getUserById } from "@/services/firebase";
-import ShareButton from "@/components/share-button/share-button";
+import { subscribeAuth, joinAsCollaborator, getDocument, saveDocumentTitle, saveDocumentContent, getUserById, enableLinkSharing } from "@/services/firebase";
 import styles from "./editor.module.css";
 import { styled, alpha } from '@mui/material/styles';
 import Menu, { MenuProps } from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import CustomizedDialogs from "@/components/dialog/dialog";
+import { SimpleEditorUI, simpleEditorExtensions, simpleEditorProps } from "@/components/tiptap-templates/simple/simple-editor";
+import "@/components/tiptap-templates/simple/simple-editor.scss";
+import { useDebouncedCallback } from "use-debounce";
+import Select, { SelectChangeEvent } from "@mui/material/Select";
+import FormControl from "@mui/material/FormControl";
+import InputLabel from "@mui/material/InputLabel";
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import DialogActions from "@mui/material/DialogActions";
+import IconButton from "@mui/material/IconButton";
+import CloseIcon from "@mui/icons-material/Close";
+import QRCodeGenerator from "@/components/qrcode/qrcode";
+import Snackbar from "@mui/material/Snackbar";
 
 const StyledMenu = styled((props: MenuProps) => (
   <Menu
@@ -66,31 +77,37 @@ const StyledMenu = styled((props: MenuProps) => (
   },
 }));
 
-function useDebounce<Args extends unknown[], R>(fn: (...args: Args) => R, delay: number) {
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+const BootstrapDialog = styled(Dialog)(({ theme }) => ({
+  '& .MuiDialogContent-root': {
+    padding: theme.spacing(2),
+  },
+  '& .MuiDialogActions-root': {
+    padding: theme.spacing(1),
+  },
+}));
 
-  const debouncedFn = (...args: Args) => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-    timeoutRef.current = setTimeout(() => {
-      fn(...args);
-    }, delay);
-  };
 
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
-  }, []);
-
-  return debouncedFn;
-}
 
 export default function EditorPage({ params }: { params: Promise<{ docId: string }> }) {
   const isUpdatingRef = useRef(false);
+  const [qrDialogOpen, setQrDialogOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleShareSelect = async (e: SelectChangeEvent) => {
+    const value = e.target.value;
+    if (value === "link") {
+      try {
+        await enableLinkSharing(docId);
+        const inviteUrl = `${window.location.origin}/editor/${docId}`;
+        await navigator.clipboard.writeText(inviteUrl);
+        setCopied(true);
+      } catch (err) {
+        console.error("Failed to share document:", err);
+      }
+    } else if (value === "qr") {
+      setQrDialogOpen(true);
+    }
+  };
 
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -113,17 +130,14 @@ export default function EditorPage({ params }: { params: Promise<{ docId: string
   const [collaborators, setCollaborators] = useState<string[]>([]);
 
   const editor = useEditor({
-    extensions: [StarterKit],
     immediatelyRender: false,
-
+    editorProps: simpleEditorProps,
+    extensions: simpleEditorExtensions,
     onUpdate: ({ editor }) => {
       if (isUpdatingRef.current) return;
-
       const jsonContent = editor.getJSON();
       const db = getDatabase();
-
-      // Save content to db
-      set(ref(db, `docs/${docId}/content`), jsonContent);
+      set(ref(db, `docs/${docId}/content`), JSON.parse(JSON.stringify(jsonContent)));
     },
   });
 
@@ -179,7 +193,7 @@ export default function EditorPage({ params }: { params: Promise<{ docId: string
     loadContent();
   }, [docId, editor, user]);
 
-  const debouncedSaveTitle = useDebounce(async (newTitle: string) => {
+  const debouncedSaveTitle = useDebouncedCallback(async (newTitle: string) => {
     try {
       await saveDocumentTitle(docId, newTitle);
     } catch (error) {
@@ -193,7 +207,7 @@ export default function EditorPage({ params }: { params: Promise<{ docId: string
     debouncedSaveTitle(newTitle);
   };
 
-  const debouncedSave = useDebounce(async (html: string) => {
+  const debouncedSave = useDebouncedCallback(async (html: string) => {
     try {
       await saveDocumentContent(docId, html);
     } catch (error) {
@@ -252,15 +266,17 @@ export default function EditorPage({ params }: { params: Promise<{ docId: string
   }
 
   return (
-    <Container className={styles.container}>
+    <Container className={styles.container} maxWidth="md">
       <Box className={styles.header}>
-        <Button
-          variant="text"
-          onClick={() => router.push("/dashboard")}
-          className={styles.backButton}
-        >
-          Back to Dashboard
-        </Button>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-start' }}>
+          <Button
+            variant="text"
+            onClick={() => router.push("/dashboard")}
+            className={styles.backButton}
+          >
+            Back to Dashboard
+          </Button>
+        </Box>
         <TextField
           variant="outlined"
           value={title}
@@ -277,70 +293,96 @@ export default function EditorPage({ params }: { params: Promise<{ docId: string
             },
           }}
         />
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <CustomizedDialogs url={`${window.location.origin}/editor/${docId}`} />
-          <ShareButton docId={docId} />
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', justifyContent: 'flex-end' }}>
+          <FormControl size="small" sx={{ minWidth: 100 }}>
+            <InputLabel id="share-select-label" sx={{ fontSize: '0.875rem' }}>Share</InputLabel>
+            <Select
+              labelId="share-select-label"
+              id="share-select"
+              value=""
+              label="Share"
+              onChange={handleShareSelect}
+              sx={{ height: 36, fontSize: '0.875rem' }}
+            >
+              <MenuItem value="link" sx={{ fontSize: '0.875rem' }}>Share Link</MenuItem>
+              <MenuItem value="qr" sx={{ fontSize: '0.875rem' }}>Share QR</MenuItem>
+            </Select>
+          </FormControl>
+
+          <Button
+            id="demo-customized-button"
+            aria-controls={open ? 'demo-customized-menu' : undefined}
+            aria-haspopup="true"
+            aria-expanded={open}
+            variant="contained"
+            disableElevation
+            onClick={handleClick}
+            endIcon={<KeyboardArrowDownIcon />}
+            size="small"
+            sx={{ textTransform: 'none', height: 36 }}
+          >
+            Collaborators ({collaborators.length})
+          </Button>
+          <StyledMenu
+            id="demo-customized-menu"
+            slotProps={{
+              list: {
+                'aria-labelledby': 'demo-customized-button',
+              },
+            }}
+            anchorEl={anchorEl}
+            open={open}
+            onClose={handleClose}
+          >
+            {collaborators.map((collaboratorId) => (
+              <MenuItem key={collaboratorId} onClick={handleClose}>
+                {collaboratorId}
+              </MenuItem>
+            ))}
+          </StyledMenu>
         </Box>
       </Box>
 
       <Box className={styles.editorWrapper}>
-        <Box className={styles.toolbar}>
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={() => editor?.chain().focus().toggleBold().run()}
-              className={`${styles.toolbarButton} ${editor?.isActive("bold") ? styles.activeButton : ""
-                }`}
-            >
-              Bold
-            </Button>
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={() => editor?.chain().focus().toggleItalic().run()}
-              className={`${styles.toolbarButton} ${editor?.isActive("italic") ? styles.activeButton : ""
-                }`}
-            >
-              Italic
-            </Button>
-          </Box>
-
-          <Box>
-            <Button
-              id="demo-customized-button"
-              aria-controls={open ? 'demo-customized-menu' : undefined}
-              aria-haspopup="true"
-              aria-expanded={open}
-              variant="contained"
-              disableElevation
-              onClick={handleClick}
-              endIcon={<KeyboardArrowDownIcon />}
-            >
-              Collaborators ({collaborators.length})
-            </Button>
-            <StyledMenu
-              id="demo-customized-menu"
-              slotProps={{
-                list: {
-                  'aria-labelledby': 'demo-customized-button',
-                },
-              }}
-              anchorEl={anchorEl}
-              open={open}
-              onClose={handleClose}
-            >
-              {collaborators.map((collaboratorId) => (
-                <MenuItem key={collaboratorId} onClick={handleClose}>
-                  {collaboratorId}
-                </MenuItem>
-              ))}
-            </StyledMenu>
-          </Box>
-
-        </Box>
-        <EditorContent editor={editor} className={styles.editorArea} />
+        <SimpleEditorUI editor={editor} />
       </Box>
+
+      <BootstrapDialog
+        onClose={() => setQrDialogOpen(false)}
+        aria-labelledby="customized-dialog-title"
+        open={qrDialogOpen}
+      >
+        <DialogTitle sx={{ m: 0, p: 2 }} id="customized-dialog-title">
+          Scan QR Code to Edit Document
+        </DialogTitle>
+        <IconButton
+          aria-label="close"
+          onClick={() => setQrDialogOpen(false)}
+          sx={(theme) => ({
+            position: 'absolute',
+            right: 8,
+            top: 8,
+            color: theme.palette.grey[500],
+          })}
+        >
+          <CloseIcon />
+        </IconButton>
+        <DialogContent dividers>
+          <QRCodeGenerator url={`${window.location.origin}/editor/${docId}`} />
+        </DialogContent>
+        <DialogActions>
+          <Button autoFocus onClick={() => setQrDialogOpen(false)}>
+            Close
+          </Button>
+        </DialogActions>
+      </BootstrapDialog>
+
+      <Snackbar
+        open={copied}
+        autoHideDuration={3000}
+        onClose={() => setCopied(false)}
+        message="Invite link copied to clipboard!"
+      />
     </Container>
   );
 }
