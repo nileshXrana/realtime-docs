@@ -15,13 +15,9 @@ import styles from "./editor.module.css";
 import { styled, alpha } from '@mui/material/styles';
 import Menu, { MenuProps } from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import { SimpleEditorUI, simpleEditorExtensions, simpleEditorProps } from "@/components/tiptap-templates/simple/simple-editor";
 import "@/components/tiptap-templates/simple/simple-editor.scss";
 import { useDebouncedCallback } from "use-debounce";
-import Select, { SelectChangeEvent } from "@mui/material/Select";
-import FormControl from "@mui/material/FormControl";
-import InputLabel from "@mui/material/InputLabel";
 import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
@@ -32,6 +28,8 @@ import QRCodeGenerator from "@/components/qrcode/qrcode";
 import Snackbar from "@mui/material/Snackbar";
 import AccountMenu from "@/components/account-menu/account-menu";
 import { logout } from "@/services/firebase";
+import BasicMenu from "@/components/basic-menu/basic-menu";
+import Groups2Icon from '@mui/icons-material/Groups2';
 
 const StyledMenu = styled((props: MenuProps) => (
   <Menu
@@ -95,20 +93,21 @@ export default function EditorPage({ params }: { params: Promise<{ docId: string
   const [qrDialogOpen, setQrDialogOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const handleShareSelect = async (e: SelectChangeEvent) => {
-    const value = e.target.value;
-    if (value === "link") {
-      try {
-        await enableLinkSharing(docId);
-        const inviteUrl = `${window.location.origin}/editor/${docId}`;
-        await navigator.clipboard.writeText(inviteUrl);
-        setCopied(true);
-      } catch (err) {
-        console.error("Failed to share document:", err);
+  const handleShareSelect = (option: string) => {
+    void (async () => {
+      if (option === "link") {
+        try {
+          await enableLinkSharing(docId);
+          const inviteUrl = `${window.location.origin}/editor/${docId}`;
+          await navigator.clipboard.writeText(inviteUrl);
+          setCopied(true);
+        } catch (err) {
+          console.error("Failed to share document:", err);
+        }
+      } else if (option === "qr") {
+        setQrDialogOpen(true);
       }
-    } else if (value === "qr") {
-      setQrDialogOpen(true);
-    }
+    })();
   };
 
 
@@ -304,20 +303,7 @@ export default function EditorPage({ params }: { params: Promise<{ docId: string
           }}
         />
         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', justifyContent: 'flex-end' }}>
-          <FormControl size="small" sx={{ minWidth: 100 }}>
-            <InputLabel id="share-select-label" sx={{ fontSize: '0.875rem' }}>Share</InputLabel>
-            <Select
-              labelId="share-select-label"
-              id="share-select"
-              value=""
-              label="Share"
-              onChange={handleShareSelect}
-              sx={{ height: 36, fontSize: '0.875rem' }}
-            >
-              <MenuItem value="link" sx={{ fontSize: '0.875rem' }}>Share Link</MenuItem>
-              <MenuItem value="qr" sx={{ fontSize: '0.875rem' }}>Share QR</MenuItem>
-            </Select>
-          </FormControl>
+          <BasicMenu handleShareSelect={handleShareSelect} />
 
           <Button
             id="demo-customized-button"
@@ -327,10 +313,10 @@ export default function EditorPage({ params }: { params: Promise<{ docId: string
             variant="contained"
             disableElevation
             onClick={handleClick}
-            endIcon={<KeyboardArrowDownIcon />}
             size="small"
-            sx={{ textTransform: 'none', height: 36 }}
+            sx={{ textTransform: 'none', padding: 1, display: 'flex', gap: 0.5 }}
           >
+            <Groups2Icon sx={{ width: 20, height: 20 }} />
             Collaborators ({collaborators.length})
           </Button>
           <StyledMenu
@@ -350,6 +336,7 @@ export default function EditorPage({ params }: { params: Promise<{ docId: string
               </MenuItem>
             ))}
           </StyledMenu>
+
           {user && (
             <AccountMenu user={user} handleLogout={handleLogout} />
           )}
