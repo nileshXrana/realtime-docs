@@ -67,13 +67,17 @@
 }
 
 .titleInput :global(.MuiInputBase-root) {
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   font-weight: 600;
   color: #1a1a1a;
   font-family: 'Inter', sans-serif;
 }
 
 .titleInput :global(.MuiOutlinedInput-notchedOutline) {
+  border: none;
+}
+
+.titleInput :hover :global(.MuiOutlinedInput-notchedOutline) {
   border: none;
 }
 
@@ -84,16 +88,6 @@
   border: 1px solid transparent;
   transition: all 0.15s ease-in-out;
   text-align: center;
-}
-
-.titleInput :global(.MuiInputBase-input:hover) {
-  background-color: rgba(0, 0, 0, 0.04);
-}
-
-.titleInput :global(.MuiInputBase-input:focus) {
-  background-color: #ffffff;
-  border-color: #1a73e8;
-  box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.15);
 }
 
 .loadingContainer {

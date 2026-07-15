@@ -84,7 +84,7 @@ export default function Dashboard() {
   }
 
   return (
-    <Container className={styles.container}>
+    <Container className={styles.container} maxWidth="lg">
       <Box className={styles.header}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <DescriptionIcon sx={{ color: '#1a73e8', fontSize: 32 }} />

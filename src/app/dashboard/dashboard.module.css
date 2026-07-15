@@ -1,8 +1,9 @@
 .container {
-  min-height: 100vh;
-  width: 50vw !important;
-  background-color: #fafafa;
+  height: 100vh;
+  background-color: #e7e7e74d;
+  border: 1px solid #dadce0;
   padding: 2rem;
+  overflow: auto;
 }
 
 .header {
