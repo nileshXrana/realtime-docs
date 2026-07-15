@@ -152,7 +152,11 @@ export default function Dashboard() {
                   <Box className={styles.docFooter}>
                     <DescriptionIcon sx={{ color: '#1a73e8', fontSize: 16 }} />
                     <Typography variant="body2" className={styles.docDate}>
-                      {new Date(doc.createdAt).toLocaleDateString()}
+                      {new Date(doc.createdAt).toLocaleDateString('en-GB', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric'
+                      })}
                     </Typography>
                   </Box>
                 </CardContent>

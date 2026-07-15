@@ -163,7 +163,6 @@ export default function EditorPage({ params }: { params: Promise<{ docId: string
     return () => unsubscribe();
   }, [router]);
 
-  // rerender the editor when any user edits the document, so that the content is always up-to-date
   useEffect(() => {
     if (!editor || !user) return;
 

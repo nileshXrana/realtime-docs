@@ -7,21 +7,11 @@ import { useRouter } from "next/navigation";
 import { useDebouncedCallback } from "use-debounce";
 import { User } from "firebase/auth";
 import Container from "@mui/material/Container";
-import Box from "@mui/material/Box";
-// import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
-import TextField from "@mui/material/TextField";
-// import { useEditor, EditorContent } from "@tiptap/react";
-// import StarterKit from "@tiptap/starter-kit";
 import { getDatabase, ref, onValue, set } from "firebase/database";
 import { subscribeAuth, joinAsCollaborator, getDocument, saveDocumentTitle, saveDocumentContent, getUserById } from "@/services/firebase";
-import ShareButton from "@/components/share-button/share-button";
-// import styles from "./editor.module.css";
 import { styled, alpha } from '@mui/material/styles';
 import Menu, { MenuProps } from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import CustomizedDialogs from "@/components/dialog/dialog";
 
 // --- Tiptap Core Extensions ---
 import { StarterKit } from "@tiptap/starter-kit"
