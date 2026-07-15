@@ -11,6 +11,17 @@ import Image from "next/image";
 import { subscribeAuth, loginWithGoogle, saveUser } from "../services/firebase";
 import styles from "./page.module.css";
 import { useParams } from 'next/navigation'
+import DocumentScannerIcon from '@mui/icons-material/DocumentScanner';
+import ListItemButton from '@mui/material/ListItemButton';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import ListItemText from '@mui/material/ListItemText';
+import DraftsIcon from '@mui/icons-material/Drafts';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import GroupsIcon from '@mui/icons-material/Groups';
+import ScreenShareIcon from '@mui/icons-material/ScreenShare';
+
+
 
 export default function Home() {
   const router = useRouter();
@@ -66,6 +77,39 @@ export default function Home() {
           <Typography variant="body1" className={styles.subtitle}>
             A simple, real-time document editor
           </Typography>
+
+          <Box className={styles.features}>
+
+            <List>
+              <ListItem disablePadding>
+                <ListItemButton>
+                  <ListItemIcon>
+                    <DocumentScannerIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="Create Document" />
+                </ListItemButton>
+              </ListItem>
+              <ListItem disablePadding>
+                <ListItemButton>
+                  <ListItemIcon>
+                    <GroupsIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="Real-Time Collaboration" />
+                </ListItemButton>
+              </ListItem>
+              <ListItem disablePadding>
+                <ListItemButton>
+                  <ListItemIcon>
+                    <ScreenShareIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="Share with anyone" />
+                </ListItemButton>
+              </ListItem>
+            </List>
+
+          </Box>
+        </Box>
+        <Box className={styles.stack}>
           {loading ? (
             <CircularProgress size={30} />
           ) : (
